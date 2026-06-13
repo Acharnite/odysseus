@@ -61,15 +61,26 @@ done
 #   nvidia/cu13        — nvidia-nvcc-cu13 (CUDA 13.x wheel style)
 #   nvidia/cu12        — nvidia-nvcc-cu12 (CUDA 12.x wheel style)
 #   nvidia/cuda_nvcc   — nvidia-cuda-nvcc-cu12 (older cu12 sub-package style)
-for cu in \
-    /app/.local/lib/python*/site-packages/nvidia/cu13 \
-    /app/.local/lib/python*/site-packages/nvidia/cu12 \
-    /app/.local/lib/python*/site-packages/nvidia/cuda_nvcc; do
-    if [ -x "$cu/bin/nvcc" ]; then
-        export CUDA_HOME="$cu"
-        break
-    fi
-done
+# Prefer the full system CUDA toolkit over pip-installed stubs.
+# The nvidia/cuda:*-devel image ships nvcc + libcudart at /usr/local/cuda;
+# using it ensures cmake/FindCUDAToolkit finds both the compiler and the
+# runtime library, which a pip-only nvcc stub (no lib64/libcudart) cannot.
+if [ -x /usr/local/cuda/bin/nvcc ]; then
+    export CUDA_HOME=/usr/local/cuda
+else
+    # Fall back to pip-installed CUDA stubs (nvidia-nvcc-cu13 etc.).
+    # These provide nvcc without the full runtime — sufficient for vLLM
+    # FlashInfer JIT but not enough for a full llama.cpp source build.
+    for cu in \
+        /app/.local/lib/python*/site-packages/nvidia/cu13 \
+        /app/.local/lib/python*/site-packages/nvidia/cu12 \
+        /app/.local/lib/python*/site-packages/nvidia/cuda_nvcc; do
+        if [ -x "$cu/bin/nvcc" ]; then
+            export CUDA_HOME="$cu"
+            break
+        fi
+    done
+fi
 # Disable the FlashInfer JIT sampler unconditionally — it is sampler-only
 # and has no impact on the attention path, but requires nvcc + matching
 # CUDA headers at startup. Without this, vLLM crashes with "Could not find

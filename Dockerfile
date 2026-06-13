@@ -1,4 +1,4 @@
-FROM python:3.12-slim
+FROM nvidia/cuda:12.4.1-devel-ubuntu22.04
 
 # System deps. tmux is required by Cookbook for background downloads/serves.
 # openssh-client is required for Cookbook remote server tests, setup, probes,
@@ -15,6 +15,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     git \
     nodejs \
     npm \
+    python3 \
+    python3-pip \
+    python3-venv \
     tmux \
     openssh-client \
     gosu \
@@ -26,8 +29,8 @@ WORKDIR /app
 # are opt-in so the default image stays MIT-core; see requirements-optional.txt.
 ARG INSTALL_OPTIONAL=false
 COPY requirements.txt requirements-optional.txt ./
-RUN pip install --no-cache-dir -r requirements.txt \
-    && if [ "$INSTALL_OPTIONAL" = "true" ]; then pip install --no-cache-dir -r requirements-optional.txt; fi
+RUN pip3 install --no-cache-dir -r requirements.txt \
+    && if [ "$INSTALL_OPTIONAL" = "true" ]; then pip3 install --no-cache-dir -r requirements-optional.txt; fi
 
 # Copy app code
 COPY . .
