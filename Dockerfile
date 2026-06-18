@@ -25,6 +25,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 WORKDIR /app
 
+# Upgrade pip to a version that supports --break-system-packages (pip >= 23.0.1).
+# Ubuntu 22.04's apt pip is too old for the Cookbook's PEP-668 fallback chain.
+RUN pip3 install --no-cache-dir --upgrade pip
+
 # Install Python deps first (layer cache). Optional extras (PyMuPDF AGPL, etc.)
 # are opt-in so the default image stays MIT-core; see requirements-optional.txt.
 ARG INSTALL_OPTIONAL=false
